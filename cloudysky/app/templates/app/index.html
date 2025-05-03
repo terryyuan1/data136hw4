@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><title>Index</title></head>
+<body style="text-align:center;font-family:sans-serif">
+  <h1>{{ bio|safe }}</h1>
+
+  <p>
+    Current user:
+    {% if current_user %}
+      <strong>{{ current_user.username }}</strong>
+    {% else %}
+      <em>Not logged in</em>
+    {% endif %}
+  </p>
+
+  <p>Current time: {{ current_time }}</p>
+
+  <p>
+    <a href="{% url 'index' %}">Home</a> |
+    <a href="{% url 'new_user' %}">Sign up</a>
+    {% if not current_user %}
+      | <a href="{% url 'login' %}">Log in</a>
+    {% endif %}
+  </p>
+</body>
+</html>
