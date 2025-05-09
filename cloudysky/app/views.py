@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.contrib.auth import login
@@ -33,27 +34,41 @@ def new_user(request):
 
 @csrf_exempt
 def create_user(request):
+    # 1) only allow POST
     if request.method != "POST":
-        return JsonResponse({ "error": "POST required" }, status=405)
+        return JsonResponse({"error": "POST required"}, status=405)
 
-    username = request.POST.get("username")
-    email    = request.POST.get("email")
-    password = request.POST.get("password")
+    # 2) parse JSON if appropriate, otherwise fallback to form-encoded
+    content_type = request.META.get("CONTENT_TYPE", "")
+    if content_type.startswith("application/json"):
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "invalid JSON"}, status=400)
+        username = payload.get("username")
+        email    = payload.get("email")
+        password = payload.get("password")
+    else:
+        username = request.POST.get("username")
+        email    = request.POST.get("email")
+        password = request.POST.get("password")
 
-    # Must have all three fields
+    # 3) basic validation
     if not username or not email or not password:
-        return JsonResponse({ "error": "username, email, and password required" }, status=400)
+        return JsonResponse(
+            {"error": "username, email, and password required"},
+            status=400
+        )
 
-    # Reject duplicate emails (and/or usernames)
+    # 4) duplicate checks
     if User.objects.filter(email=email).exists():
-        return JsonResponse({ "error": "email already in use" }, status=400)
+        return JsonResponse({"error": "email already in use"}, status=400)
     if User.objects.filter(username=username).exists():
-        return JsonResponse({ "error": "username already in use" }, status=400)
+        return JsonResponse({"error": "username already in use"}, status=400)
 
-    # Actually create the user
+    # 5) finally create
     User.objects.create_user(username=username, email=email, password=password)
-
-    return JsonResponse({ "message": "User created successfully." })
+    return JsonResponse({"message": "User created successfully."})
 
 @require_GET
 def new_post(request):
