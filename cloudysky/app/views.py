@@ -8,7 +8,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http                import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models                    import Post, Comment
-from django.utils import timezone
 import zoneinfo 
 from django.views.decorators.http  import require_GET
 
@@ -41,10 +40,22 @@ def create_user(request):
     email    = request.POST.get("email")
     password = request.POST.get("password")
 
-    # … your user‐creation logic here …
+    # Must have all three fields
+    if not username or not email or not password:
+        return JsonResponse({ "error": "username, email, and password required" }, status=400)
+
+    # Reject duplicate emails (and/or usernames)
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({ "error": "email already in use" }, status=400)
+    if User.objects.filter(username=username).exists():
+        return JsonResponse({ "error": "username already in use" }, status=400)
+
+    # Actually create the user
+    User.objects.create_user(username=username, email=email, password=password)
 
     return JsonResponse({ "message": "User created successfully." })
 
+@require_GET
 def new_post(request):
     # GET only: render the post‐creation form
     return render(request, 'app/new_post.html')
