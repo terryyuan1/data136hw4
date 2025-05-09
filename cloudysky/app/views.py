@@ -31,43 +31,36 @@ def new_user(request):
     form = SignUpForm()
     return render(request, 'app/new.html', {'form': form})
 
-
 @csrf_exempt
 def create_user(request):
     # only allow POST
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
-    # 1) try to parse JSON body if it looks like JSON
-    content_type = request.META.get("CONTENT_TYPE", "")
-    if content_type.startswith("application/json"):
-        try:
-            payload = json.loads(request.body.decode("utf-8"))
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "invalid JSON"})
+    # 1) Try to parse JSON body, else fall back to form‐encoded.
+    try:
+        payload = json.loads(request.body.decode("utf-8")) or {}
         username = payload.get("username")
         email    = payload.get("email")
         password = payload.get("password")
-    else:
-        # 2) fallback to normal form-encoded POST
+    except (ValueError, TypeError):
         username = request.POST.get("username")
         email    = request.POST.get("email")
         password = request.POST.get("password")
 
-    # 3) basic validation — still return 200 so the test harness “sees” your JSON error
+    # 2) Missing fields → still HTTP 200
     if not username or not email or not password:
         return JsonResponse({"error": "username, email, and password required"})
 
-    # 4) duplicate checks
+    # 3) Duplicate email/username → HTTP 400
     if User.objects.filter(email=email).exists():
-        return JsonResponse({"error": "email already in use"})
+        return JsonResponse({"error": "email already in use"}, status=400)
     if User.objects.filter(username=username).exists():
-        return JsonResponse({"error": "username already in use"})
+        return JsonResponse({"error": "username already in use"}, status=400)
 
-    # 5) finally create
+    # 4) Everything’s good → create and return success
     User.objects.create_user(username=username, email=email, password=password)
     return JsonResponse({"message": "User created successfully."})
-
 
 @require_GET
 def new_post(request):
