@@ -1,13 +1,51 @@
 <!DOCTYPE html>
-<html>
-<head><title>Sign Up</title></head>
-<body style="text-align:center;font-family:sans-serif">
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Up</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; }
+    form { display: inline-block; text-align: left; }
+    label { display: block; margin-top: 1em; }
+    input { width: 100%; padding: 0.5em; }
+    button { margin-top: 1em; padding: 0.5em 1em; }
+  </style>
+</head>
+<body>
   <h2>Create an account</h2>
-  <form method="post" action="{% url 'create_user' %}">
+  <form method="post" action="/app/createUser">
     {% csrf_token %}
-    {{ form.as_p }}
+    
+    <label for="id_user_name">Username:</label>
+    <input
+      type="text"
+      name="user_name"
+      id="id_user_name"
+      required
+      autocomplete="username"
+    >
+
+    <label for="id_email">Email:</label>
+    <input
+      type="email"
+      name="email"
+      id="id_email"
+      required
+      autocomplete="email"
+    >
+
+    <label for="id_password">Password:</label>
+    <input
+      type="password"
+      name="password"
+      id="id_password"
+      required
+      autocomplete="new-password"
+    >
+
     <button type="submit">Sign up</button>
   </form>
-  <p><a href="{% url 'index' %}">Back to home</a></p>
+
+  <p><a href="{% url 'index' %}">← Back to home</a></p>
 </body>
 </html>

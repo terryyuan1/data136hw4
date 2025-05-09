@@ -33,37 +33,35 @@ def new_user(request):
 
 @csrf_exempt
 def create_user(request):
-    # 1) Only allow POST
     if request.method != "POST":
-        return JsonResponse({"error": "POST required"}, status=405)
+        return JsonResponse({'error': 'POST required'}, status=405)
 
-    # 2) Branch on JSON vs form-encoded
-    if request.META.get("CONTENT_TYPE", "").startswith("application/json"):
-        try:
-            payload = json.loads(request.body.decode("utf-8"))
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "invalid JSON"}, status=400)
-        username = payload.get("username")
-        email    = payload.get("email")
-        password = payload.get("password")
-    else:
-        username = request.POST.get("username")
-        email    = request.POST.get("email")
-        password = request.POST.get("password")
+    # 1) parse JSON _or_ form‐encoded
+    try:
+        payload = json.loads(request.body.decode('utf-8')) or {}
+        uname = payload.get('user_name') or payload.get('username')
+        email = payload.get('email')
+        password = payload.get('password')
+    except json.JSONDecodeError:
+        # fallback to regular POST
+        uname    = request.POST.get('user_name') or request.POST.get('username')
+        email    = request.POST.get('email')
+        password = request.POST.get('password')
 
-    # 3) Missing fields → still HTTP 200
-    if not username or not email or not password:
-        return JsonResponse({"error":"username, email, and password required"})
+    # 2) missing → HTTP 200
+    if not uname or not email or not password:
+        return JsonResponse({'error': 'username, email, and password required'})
 
-    # 4) Duplicate checks → HTTP 400
+    # 3) duplicates → HTTP 400
     if User.objects.filter(email=email).exists():
-        return JsonResponse({"error": "email already in use"}, status=400)
-    if User.objects.filter(username=username).exists():
-        return JsonResponse({"error": "username already in use"}, status=400)
+        return JsonResponse({'error': 'email already in use'}, status=400)
+    if User.objects.filter(username=uname).exists():
+        return JsonResponse({'error': 'username already in use'}, status=400)
 
-    # 5) Create & return success
-    User.objects.create_user(username=username, email=email, password=password)
-    return JsonResponse({"message":"User created successfully."})
+    # 4) good → create
+    User.objects.create_user(username=uname, email=email, password=password)
+    return JsonResponse({'message': 'User created successfully.'})
+
 
 
 @require_GET
