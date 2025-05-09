@@ -27,6 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# after login, send users back to our index page instead of /accounts/profile/
+
+LOGIN_REDIRECT_URL = '/'
+
 
 # Application definition
 

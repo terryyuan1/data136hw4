@@ -33,35 +33,50 @@ def new_user(request):
 
 @csrf_exempt
 def create_user(request):
+    # 1) only allow POST
     if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
 
-    # 1) parse JSON _or_ form‐encoded
-    try:
-        payload = json.loads(request.body.decode('utf-8')) or {}
-        uname = payload.get('user_name') or payload.get('username')
-        email = payload.get('email')
+    # 2) parse JSON _or_ form-encoded
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+        uname    = payload.get('user_name') or payload.get('username')
+        email    = payload.get('email')
         password = payload.get('password')
-    except json.JSONDecodeError:
-        # fallback to regular POST
+        is_admin = payload.get('is_admin', '0')
+    else:
         uname    = request.POST.get('user_name') or request.POST.get('username')
         email    = request.POST.get('email')
         password = request.POST.get('password')
+        is_admin = request.POST.get('is_admin', '0')
 
-    # 2) missing → HTTP 200
+    # 3) missing fields → HTTP 200 with error JSON
     if not uname or not email or not password:
-        return JsonResponse({'error': 'username, email, and password required'})
+        return JsonResponse(
+            {'error': 'username, email, and password required'}
+        )
 
-    # 3) duplicates → HTTP 400
+    # 4) duplicate email/username → HTTP 400
     if User.objects.filter(email=email).exists():
         return JsonResponse({'error': 'email already in use'}, status=400)
     if User.objects.filter(username=uname).exists():
         return JsonResponse({'error': 'username already in use'}, status=400)
 
-    # 4) good → create
-    User.objects.create_user(username=uname, email=email, password=password)
-    return JsonResponse({'message': 'User created successfully.'})
+    # 5) everything’s good → create the user
+    user = User.objects.create_user(
+        username=uname,
+        email=email,
+        password=password,
+    )
+    # set staff status if they checked “1”
+    user.is_staff = (is_admin == "1")
+    user.save()
 
+    return JsonResponse({'message': 'User created successfully.'})
 
 
 @require_GET
@@ -75,15 +90,17 @@ def new_comment(request):
     return render(request, 'app/new_comment.html')
 
 @csrf_exempt
-@login_required         # ensures we have a logged-in user
 def create_post(request):
-    if request.method != 'POST':
+    # only POST
+    if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
+
+    # must be logged in or 401
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     title   = request.POST.get('title')
     content = request.POST.get('content')
-
-    # basic validation
     if not title or not content:
         return JsonResponse({'error': 'title and content required'}, status=400)
 
@@ -92,25 +109,23 @@ def create_post(request):
         title   = title,
         content = content
     )
+    return JsonResponse({'id': post.id, 'message': 'Post created'})
 
-    return JsonResponse({
-        'id': post.id,
-        'message': 'Post created'
-    })
 
 @csrf_exempt
-@login_required
 def create_comment(request):
-    if request.method != 'POST':
+    # only POST
+    if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     post_id = request.POST.get('post_id')
     content = request.POST.get('content')
-
     if not post_id or not content:
         return JsonResponse({'error': 'post_id and content required'}, status=400)
 
-    # look up the parent post
     try:
         parent = Post.objects.get(id=post_id)
     except Post.DoesNotExist:
@@ -121,51 +136,20 @@ def create_comment(request):
         post    = parent,
         content = content
     )
-
-    return JsonResponse({
-        'id': comment.id,
-        'message': 'Comment created'
-    })
+    return JsonResponse({'id': comment.id, 'message': 'Comment created'})
 
 @csrf_exempt
-@login_required
-def create_comment(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-
-    post_id = request.POST.get('post_id')
-    content = request.POST.get('content')
-
-    if not post_id or not content:
-        return JsonResponse({'error': 'post_id and content required'}, status=400)
-
-    # look up the parent post
-    try:
-        parent = Post.objects.get(id=post_id)
-    except Post.DoesNotExist:
-        return JsonResponse({'error': 'post not found'}, status=404)
-
-    comment = Comment.objects.create(
-        user    = request.user,
-        post    = parent,
-        content = content
-    )
-
-    return JsonResponse({
-        'id': comment.id,
-        'message': 'Comment created'
-    })
-
-
-@csrf_exempt
-@user_passes_test(lambda u: u.is_staff)
 def hide_post(request):
-    if request.method != 'POST':
+    # only POST
+    if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
+
+    # must be logged in staff
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     post_id = request.POST.get('post_id')
     reason  = request.POST.get('reason')
-
     if not post_id or not reason:
         return JsonResponse({'error': 'post_id and reason required'}, status=400)
 
@@ -174,21 +158,22 @@ def hide_post(request):
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
 
-    post.hidden = True
-    post.hide_reason = reason   # if you have this field
+    post.hidden      = True
+    post.hide_reason = reason   # if you have that field
     post.save()
-
     return JsonResponse({'message': 'Post hidden'})
 
 @csrf_exempt
-@user_passes_test(lambda u: u.is_staff)
 def hide_comment(request):
-    if request.method != 'POST':
+    # only POST
+    if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
+
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     comment_id = request.POST.get('comment_id')
     reason     = request.POST.get('reason')
-
     if not comment_id or not reason:
         return JsonResponse({'error': 'comment_id and reason required'}, status=400)
 
@@ -198,37 +183,29 @@ def hide_comment(request):
         return JsonResponse({'error': 'comment not found'}, status=404)
 
     comment.hidden      = True
-    comment.hide_reason = reason   # if you added a hide_reason field
+    comment.hide_reason = reason   # if you added that field
     comment.save()
-
     return JsonResponse({'message': 'Comment hidden'})
 
 @csrf_exempt
 def dump_feed(request):
-    # only allow GET
-    if request.method != 'GET':
+    # only GET
+    if request.method != "GET":
         return JsonResponse({'error': 'GET required'}, status=405)
 
-    # auth check: must be logged in _and_ admin
+    # must be logged in staff
     if not request.user.is_authenticated or not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
-    # build the feed: all non-hidden posts, newest first
     posts = Post.objects.filter(hidden=False).order_by('-created_at')
     feed = []
     for p in posts:
         feed.append({
-            'id':       p.id,
+            'id'      : p.id,
             'username': p.author.username,
-            'date':     p.created_at.strftime("%Y-%m-%d %H:%M"),
-            'title':    p.title,
-            'content':  p.content,
-            'comments': [
-                c.id for c in p.comment_set.filter(hidden=False)
-            ],
+            'date'    : p.created_at.strftime("%Y-%m-%d %H:%M"),
+            'title'   : p.title,
+            'content' : p.content,
+            'comments': [c.id for c in p.comment_set.filter(hidden=False)],
         })
-
     return JsonResponse(feed, safe=False)
-
-
-
