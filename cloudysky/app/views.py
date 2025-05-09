@@ -33,34 +33,38 @@ def new_user(request):
 
 @csrf_exempt
 def create_user(request):
-    # only allow POST
+    # 1) Only allow POST
     if request.method != "POST":
         return JsonResponse({"error": "POST required"}, status=405)
 
-    # 1) Try to parse JSON body, else fall back to form‐encoded.
-    try:
-        payload = json.loads(request.body.decode("utf-8")) or {}
+    # 2) Branch on JSON vs form-encoded
+    if request.META.get("CONTENT_TYPE", "").startswith("application/json"):
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "invalid JSON"}, status=400)
         username = payload.get("username")
         email    = payload.get("email")
         password = payload.get("password")
-    except (ValueError, TypeError):
+    else:
         username = request.POST.get("username")
         email    = request.POST.get("email")
         password = request.POST.get("password")
 
-    # 2) Missing fields → still HTTP 200
+    # 3) Missing fields → still HTTP 200
     if not username or not email or not password:
-        return JsonResponse({"error": "username, email, and password required"})
+        return JsonResponse({"error":"username, email, and password required"})
 
-    # 3) Duplicate email/username → HTTP 400
+    # 4) Duplicate checks → HTTP 400
     if User.objects.filter(email=email).exists():
         return JsonResponse({"error": "email already in use"}, status=400)
     if User.objects.filter(username=username).exists():
         return JsonResponse({"error": "username already in use"}, status=400)
 
-    # 4) Everything’s good → create and return success
+    # 5) Create & return success
     User.objects.create_user(username=username, email=email, password=password)
-    return JsonResponse({"message": "User created successfully."})
+    return JsonResponse({"message":"User created successfully."})
+
 
 @require_GET
 def new_post(request):
