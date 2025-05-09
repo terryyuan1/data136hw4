@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models                    import Post, Comment
 from django.utils import timezone
 import zoneinfo 
+from django.views.decorators.http  import require_GET
 
 def index(request):
     # convert now() to Chicago time
@@ -24,7 +25,7 @@ def index(request):
     }
     return render(request, 'app/index.html', context)
 
-
+@require_GET
 def new_user(request):
     """Display the signup form on GET."""
     form = SignUpForm()
@@ -48,7 +49,7 @@ def new_post(request):
     # GET only: render the post‐creation form
     return render(request, 'app/new_post.html')
 
-
+@require_GET
 def new_comment(request):
     # GET only: render the comment‐creation form
     return render(request, 'app/new_comment.html')

@@ -1,0 +1,13 @@
+<form action="/app/createPost" method="post">
+    {% csrf_token %}
+    <div>
+      <label for="id_title">Title:</label><br>
+      <input type="text" id="id_title" name="title" required>
+    </div>
+    <div>
+      <label for="id_content">Content:</label><br>
+      <textarea id="id_content" name="content" rows="5" required></textarea>
+    </div>
+    <button type="submit">Create Post</button>
+  </form>
+  
