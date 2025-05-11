@@ -95,14 +95,17 @@ def create_post(request):
     if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
 
-    # must be logged in or 401
+    # must be logged in
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     title   = request.POST.get('title')
     content = request.POST.get('content')
     if not title or not content:
-        return JsonResponse({'error': 'title and content required'}, status=400)
+        return JsonResponse(
+            {'error': 'title and content required'},
+            status=400
+        )
 
     post = Post.objects.create(
         author  = request.user,
@@ -111,23 +114,26 @@ def create_post(request):
     )
     return JsonResponse({'id': post.id, 'message': 'Post created'})
 
-
 @csrf_exempt
 def create_comment(request):
     # only POST
     if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
 
+    # must be logged in
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     post_id = request.POST.get('post_id')
     content = request.POST.get('content')
     if not post_id or not content:
-        return JsonResponse({'error': 'post_id and content required'}, status=400)
+        return JsonResponse(
+            {'error': 'post_id and content required'},
+            status=400
+        )
 
     try:
-        parent = Post.objects.get(id=post_id)
+        parent = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
 
@@ -137,6 +143,7 @@ def create_comment(request):
         content = content
     )
     return JsonResponse({'id': comment.id, 'message': 'Comment created'})
+
 
 @csrf_exempt
 def hide_post(request):
@@ -149,17 +156,15 @@ def hide_post(request):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     post_id = request.POST.get('post_id')
-    reason  = request.POST.get('reason')
-    if not post_id or not reason:
-        return JsonResponse({'error': 'post_id and reason required'}, status=400)
+    if not post_id:
+        return JsonResponse({'error': 'post_id required'}, status=400)
 
     try:
-        post = Post.objects.get(id=post_id)
+        post = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
 
-    post.hidden      = True
-    post.hide_reason = reason   # if you have that field
+    post.hidden = True
     post.save()
     return JsonResponse({'message': 'Post hidden'})
 
@@ -169,21 +174,25 @@ def hide_comment(request):
     if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
 
+    # must be logged in staff
     if not request.user.is_authenticated or not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     comment_id = request.POST.get('comment_id')
     reason     = request.POST.get('reason')
     if not comment_id or not reason:
-        return JsonResponse({'error': 'comment_id and reason required'}, status=400)
+        return JsonResponse(
+            {'error': 'comment_id and reason required'},
+            status=400
+        )
 
     try:
-        comment = Comment.objects.get(id=comment_id)
+        comment = Comment.objects.get(pk=comment_id)
     except Comment.DoesNotExist:
         return JsonResponse({'error': 'comment not found'}, status=404)
 
     comment.hidden      = True
-    comment.hide_reason = reason   # if you added that field
+    comment.hide_reason = reason
     comment.save()
     return JsonResponse({'message': 'Comment hidden'})
 
