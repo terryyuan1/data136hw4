@@ -99,14 +99,24 @@ def create_post(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
-    title   = request.POST.get('title')
-    content = request.POST.get('content')
-    if not title or not content:
-        return JsonResponse(
-            {'error': 'title and content required'},
-            status=400
-        )
+    # parse JSON or form-encoded
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+        title   = payload.get('title')
+        content = payload.get('content')
+    else:
+        title   = request.POST.get('title')
+        content = request.POST.get('content')
 
+    # validate
+    if not title or not content:
+        return JsonResponse({'error': 'title and content required'}, status=400)
+
+    # actually create
     post = Post.objects.create(
         author  = request.user,
         title   = title,
@@ -124,14 +134,24 @@ def create_comment(request):
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
-    post_id = request.POST.get('post_id')
-    content = request.POST.get('content')
-    if not post_id or not content:
-        return JsonResponse(
-            {'error': 'post_id and content required'},
-            status=400
-        )
+    # parse JSON or form-encoded
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+        post_id = payload.get('post_id')
+        content = payload.get('content')
+    else:
+        post_id = request.POST.get('post_id')
+        content = request.POST.get('content')
 
+    # validate
+    if not post_id or not content:
+        return JsonResponse({'error': 'post_id and content required'}, status=400)
+
+    # ensure parent exists
     try:
         parent = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
@@ -151,8 +171,8 @@ def hide_post(request):
     if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
 
-    # must be logged in staff
-    if not request.user.is_authenticated or not request.user.is_staff:
+    # must be staff
+    if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     post_id = request.POST.get('post_id')
@@ -174,25 +194,20 @@ def hide_comment(request):
     if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
 
-    # must be logged in staff
-    if not request.user.is_authenticated or not request.user.is_staff:
+    # must be staff
+    if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
     comment_id = request.POST.get('comment_id')
-    reason     = request.POST.get('reason')
-    if not comment_id or not reason:
-        return JsonResponse(
-            {'error': 'comment_id and reason required'},
-            status=400
-        )
+    if not comment_id:
+        return JsonResponse({'error': 'comment_id required'}, status=400)
 
     try:
         comment = Comment.objects.get(pk=comment_id)
     except Comment.DoesNotExist:
         return JsonResponse({'error': 'comment not found'}, status=404)
 
-    comment.hidden      = True
-    comment.hide_reason = reason
+    comment.hidden = True
     comment.save()
     return JsonResponse({'message': 'Comment hidden'})
 
