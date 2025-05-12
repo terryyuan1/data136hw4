@@ -18,7 +18,7 @@ def index(request):
     now_chi    = timezone.now().astimezone(chicago_tz)
 
     context = {
-        'bio':          "Hi, I’m <b>Your Name</b> and my teammates are Alice & Bob.",
+        'bio':          "Hi, I'm <b>Your Name</b> and my teammates are Alice & Bob.",
         'current_user': request.user if request.user.is_authenticated else None,
         # strftime in Chicago time so autograder sees the correct HH:MM
         'current_time': now_chi.strftime("%Y-%m-%d %H:%M:%S"),
@@ -66,13 +66,13 @@ def create_user(request):
     if User.objects.filter(username=uname).exists():
         return JsonResponse({'error': 'username already in use'}, status=400)
 
-    # 5) everything’s good → create the user
+    # 5) everything's good → create the user
     user = User.objects.create_user(
         username=uname,
         email=email,
         password=password,
     )
-    # set staff status if they checked “1”
+    # set staff status if they checked "1"
     user.is_staff = (is_admin == "1")
     user.save()
 
@@ -81,12 +81,12 @@ def create_user(request):
 
 @require_GET
 def new_post(request):
-    # GET only: render the post‐creation form
+    # GET only: render the post-creation form
     return render(request, 'app/new_post.html')
 
 @require_GET
 def new_comment(request):
-    # GET only: render the comment‐creation form
+    # GET only: render the comment-creation form
     return render(request, 'app/new_comment.html')
 
 @csrf_exempt
@@ -151,7 +151,19 @@ def hide_post(request):
     if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
-    post_id = request.POST.get('post_id')
+    # Accept both JSON and form data
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode())
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+        post_id = payload.get('post_id')
+        reason = payload.get('reason', '')
+    else:
+        post_id = request.POST.get('post_id')
+        reason = request.POST.get('reason', '')
+
     if not post_id:
         return JsonResponse({'error': 'post_id required'}, status=400)
 
@@ -161,6 +173,7 @@ def hide_post(request):
         return JsonResponse({'error': 'post not found'}, status=404)
 
     post.hidden = True
+    post.hide_reason = reason
     post.save()
     return JsonResponse({'message': 'Post hidden'})
 
@@ -171,7 +184,19 @@ def hide_comment(request):
     if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
-    comment_id = request.POST.get('comment_id')
+    # Accept both JSON and form data
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode())
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+        comment_id = payload.get('comment_id')
+        reason = payload.get('reason', '')
+    else:
+        comment_id = request.POST.get('comment_id')
+        reason = request.POST.get('reason', '')
+
     if not comment_id:
         return JsonResponse({'error': 'comment_id required'}, status=400)
 
@@ -181,6 +206,7 @@ def hide_comment(request):
         return JsonResponse({'error': 'comment not found'}, status=404)
 
     comment.hidden = True
+    comment.hide_reason = reason
     comment.save()
     return JsonResponse({'message': 'Comment hidden'})
 
