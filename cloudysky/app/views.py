@@ -95,17 +95,8 @@ def create_post(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    ct = request.META.get('CONTENT_TYPE','')
-    if ct.startswith('application/json'):
-        try:
-            payload = json.loads(request.body.decode())
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'invalid JSON'}, status=400)
-        title   = payload.get('title')
-        content = payload.get('content')
-    else:
-        title   = request.POST.get('title')
-        content = request.POST.get('content')
+    title = request.POST.get('title')
+    content = request.POST.get('content')
     if not title or not content:
         return JsonResponse({'error': 'title and content required'}, status=400)
     post = Post.objects.create(author=request.user, title=title, content=content)
@@ -117,17 +108,8 @@ def create_comment(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    ct = request.META.get('CONTENT_TYPE','')
-    if ct.startswith('application/json'):
-        try:
-            payload = json.loads(request.body.decode())
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'invalid JSON'}, status=400)
-        post_id = payload.get('post_id')
-        content = payload.get('content')
-    else:
-        post_id = request.POST.get('post_id')
-        content = request.POST.get('content')
+    post_id = request.POST.get('post_id')
+    content = request.POST.get('content')
     if not post_id or not content:
         return JsonResponse({'error': 'post_id and content required'}, status=400)
     try:
@@ -143,17 +125,8 @@ def hide_post(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    ct = request.META.get('CONTENT_TYPE', '')
-    if ct.startswith('application/json'):
-        try:
-            payload = json.loads(request.body.decode())
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'invalid JSON'}, status=400)
-        post_id = payload.get('post_id')
-        reason = payload.get('reason', '')
-    else:
-        post_id = request.POST.get('post_id')
-        reason = request.POST.get('reason', '')
+    post_id = request.POST.get('post_id')
+    reason = request.POST.get('reason', '')
     if not post_id:
         return JsonResponse({'error': 'post_id required'}, status=400)
     try:
@@ -171,17 +144,8 @@ def hide_comment(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    ct = request.META.get('CONTENT_TYPE', '')
-    if ct.startswith('application/json'):
-        try:
-            payload = json.loads(request.body.decode())
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'invalid JSON'}, status=400)
-        comment_id = payload.get('comment_id')
-        reason = payload.get('reason', '')
-    else:
-        comment_id = request.POST.get('comment_id')
-        reason = request.POST.get('reason', '')
+    comment_id = request.POST.get('comment_id')
+    reason = request.POST.get('reason', '')
     if not comment_id:
         return JsonResponse({'error': 'comment_id required'}, status=400)
     try:
