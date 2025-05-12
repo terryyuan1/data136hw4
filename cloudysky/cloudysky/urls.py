@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
     # ↪︎ leave the built-in auth under /accounts/
-    path('app/', include('app.urls')),
+    path('', include('app.urls')),      # root-level for human-facing pages
+    path('app/', include('app.urls')),  # /app/ for API endpoints
 ]
