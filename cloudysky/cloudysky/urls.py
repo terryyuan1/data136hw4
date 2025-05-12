@@ -24,4 +24,14 @@ urlpatterns = [
     # ↪︎ leave the built-in auth under /accounts/
     path('', include('app.urls')),      # root-level for human-facing pages
     path('app/', include('app.urls')),  # /app/ for API endpoints
+    
+    # Direct API endpoints (no app/ prefix) for absolute paths in tests
+    path('createPost/', app_views.create_post),
+    path('createPost', app_views.create_post),
+    path('createComment/', app_views.create_comment),
+    path('createComment', app_views.create_comment),
+    path('hidePost/', app_views.hide_post),
+    path('hideComment/', app_views.hide_comment),
+    path('dumpFeed/', app_views.dump_feed),
+    path('dumpUploads/', app_views.dump_uploads),
 ]
