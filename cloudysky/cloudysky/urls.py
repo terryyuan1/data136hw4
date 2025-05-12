@@ -21,8 +21,6 @@ from app import views as app_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
-    # ↪︎ mount your app at the very root
-    path('',     include('app.urls')),
     # ↪︎ leave the built-in auth under /accounts/
     path('app/', include('app.urls')),
 ]
