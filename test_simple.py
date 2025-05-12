@@ -193,4 +193,139 @@ class TestDjangoHw5simple(unittest.TestCase):
             print("Apptable", apptable, len(contents), "rows")
         return n
 
+    # --- TEST METHODS ---
+
+    @weight(0.5)
+    @number("10.0")
+    def test_create_post_admin_success(self):
+        n = int(random.random() * 25)
+        data = {'title': "Fuzzy bunnies are great", "content": bunnytweets[n]}
+        session = self.session_admin
+        request = session.post("http://localhost:8000/app/createPost", data=data, headers=self.headers_admin)
+        self.assertLess(request.status_code, 203)
+
+    @weight(0.5)
+    @number("10.1")
+    def test_create_post_notloggedin(self):
+        data = {'title': "I like fuzzy bunnies 10.0", "content": "I like fuzzy bunnies.  Do you?"}
+        session, csrf = self.get_csrf_login_token()
+        request = session.post("http://localhost:8000/app/createPost", data=data)
+        self.assertEqual(request.status_code, 401)
+
+    @weight(1)
+    @number("10.2")
+    def test_create_post_user_success(self):
+        data = {'title': "Fuzzy bunnies overrrated?", "content": "I'm not sure about fuzzy bunnies; I think I'm allergic.", 'csrfmiddlewaretoken': self.csrfdata_user}
+        session = self.session_user
+        request = session.post("http://localhost:8000/app/createPost", data=data, headers=self.headers_user)
+        self.assertNotEqual(request.status_code, 404)
+        self.assertEqual(request.status_code, 200)
+
+    @weight(0.5)
+    @number("13.0")
+    def test_hide_post_notloggedin(self):
+        data = {'post_id': "0", "reason": "天安门广场"}
+        session, csrf = self.get_csrf_login_token()
+        request = session.post("http://localhost:8000/app/hidePost", data=data)
+        self.assertNotEqual(request.status_code, 404)
+        self.assertEqual(request.status_code, 401)
+
+    @weight(0.5)
+    @number("13.1")
+    def test_hide_post_user_unauthorized(self):
+        data = {'post_id': "1", "reason": "NIXON"}
+        session = self.session_user
+        request = session.post("http://localhost:8000/app/hidePost", data=data, headers=self.headers_user)
+        self.assertNotEqual(request.status_code, 404)
+        self.assertEqual(request.status_code, 401)
+
+    @weight(1)
+    @number("13.2")
+    def test_hide_post_admin_success(self):
+        data = {'post_id': "1", "reason": "NIXON", 'csrfmiddlewaretoken': self.csrfdata_admin}
+        session = self.session_admin
+        request = session.post("http://localhost:8000/app/hidePost", data=data, headers=self.headers_admin)
+        self.assertNotEqual(request.status_code, 404)
+        self.assertEqual(request.status_code, 200)
+
+    @weight(0)
+    @number("13.2")
+    def test_hide_comment_admin_success(self):
+        data = {'comment_id': "1", "reason": "NIXON", 'csrfmiddlewaretoken': self.csrfdata_admin}
+        session = self.session_admin
+        request = session.post("http://localhost:8000/app/hideComment", data=data, headers=self.headers_admin)
+        self.assertNotEqual(request.status_code, 404)
+        self.assertEqual(request.status_code, 200)
+
+    @weight(0.5)
+    @number("11.0")
+    def test_create_comment_admin_success(self):
+        session = self.session_admin
+        data = {"content": "I love fuzzy bunnies.  Everyone should.", "post_id": 1}
+        response2 = session.post("http://localhost:8000/app/createComment", data=data, headers=self.headers_admin)
+        self.assertNotEqual(response2.status_code, 404)
+        self.assertEqual(response2.status_code, 200)
+
+    @weight(0.5)
+    @number("11.1")
+    def test_create_comment_notloggedin(self):
+        session, csrf = self.get_csrf_login_token()
+        data = {"content": "I love fuzzy bunnies.  Everyone should.", "post_id": 1}
+        response2 = session.post("http://localhost:8000/app/createComment", data=data)
+        self.assertNotEqual(response2.status_code, 404)
+        self.assertEqual(response2.status_code, 401)
+
+    @weight(1.0)
+    @number("11.2")
+    def test_create_comment_user_success(self):
+        session = self.session_user
+        data = {"content": "I love fuzzy bunnies.  Everyone should.", "post_id": 1}
+        response2 = session.post("http://localhost:8000/app/createComment", data=data, headers=self.headers_user)
+        self.assertNotEqual(response2.status_code, 404)
+        self.assertEqual(response2.status_code, 200)
+
+    @weight(2)
+    @number("21")
+    def test_create_post_add(self):
+        session = self.session_admin
+        before_rows = self.count_app_rows()
+        data = {'title': "I like fuzzy bunnies", "content": "I like fuzzy bunnies.  Do you?"}
+        response2 = session.post("http://localhost:8000/app/createPost", data=data, headers=self.headers_admin)
+        for _ in range(10):
+            after_rows = self.count_app_rows()
+            if after_rows - before_rows > 0:
+                return
+            sleep(1)
+        self.assertGreater(after_rows - before_rows, 0, "Cannot confirm createPost updated database\n" + "Content:{}".format(response2.text))
+
+    @weight(2)
+    @number("22")
+    def test_create_comment_add(self):
+        session = self.session_admin
+        before_rows = self.count_app_rows()
+        data = {"content": "Yes, I like fuzzy bunnies a lot.", "post_id": 1}
+        response2 = session.post("http://localhost:8000/app/createComment", data=data, headers=self.headers_admin)
+        for _ in range(10):
+            after_rows = self.count_app_rows()
+            if after_rows - before_rows > 0:
+                return
+            sleep(1)
+        self.assertGreater(after_rows - before_rows, 0, "Cannot confirm createComment updated database\n" + "Content:{}".format(response2.text))
+
+    @weight(2)
+    @number("21")
+    def test_dump_feed_json(self):
+        session = self.session_admin
+        print("Calling http://localhost:8000/app/dumpFeed")
+        response = session.get("http://localhost:8000/app/dumpFeed", headers=self.headers_admin)
+        self.assertGreater(len(response.content), 30)
+        try:
+            j = response.json()
+        except:
+            assert False, f"Couldn't decode JSON {response.content}"
+
+if __name__ == "__main__":
+    unittest.main()
+
+
     # ... (rest of the test class as provided) ... 

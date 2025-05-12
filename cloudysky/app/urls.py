@@ -43,3 +43,6 @@ urlpatterns = [
     path('dumpUploads/', views.dump_uploads, name='dump_uploads'),
     path('dumpUploads', views.dump_uploads),  # without trailing slash
 ]
+
+if __name__ == "__main__":
+    unittest.main()

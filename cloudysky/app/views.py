@@ -80,14 +80,9 @@ def new_comment(request):
 def create_post(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
-    # Always use a fallback user if not authenticated
-    author = User.objects.filter(is_staff=True).first() or User.objects.first()
-    if not author:
-        author = User.objects.create_superuser(
-            username="admin",
-            email="admin@test.com",
-            password="admin123"
-        )
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized: Not logged in'}, status=401)
+    author = request.user
     title = request.POST.get('title') or request.POST.get('title', '') or "Default Title"
     content = request.POST.get('content') or request.POST.get('content', '') or "Default Content"
     # Also handle JSON
@@ -108,13 +103,9 @@ def create_post(request):
 def create_comment(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
-    user = User.objects.filter(is_staff=True).first() or User.objects.first()
-    if not user:
-        user = User.objects.create_superuser(
-            username="admin",
-            email="admin@test.com",
-            password="admin123"
-        )
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized: Not logged in'}, status=401)
+    user = request.user
     post_id = request.POST.get('post_id') or "1"
     content = request.POST.get('content') or "Default comment"
     # Also handle JSON
@@ -133,11 +124,7 @@ def create_comment(request):
     try:
         parent = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
-        parent = Post.objects.create(
-            author=user,
-            title=f"Auto-created post {post_id} for comment",
-            content="This post was auto-created for testing"
-        )
+        return JsonResponse({'error': 'post not found'}, status=404)
     comment = Comment.objects.create(user=user, post=parent, content=content)
     print('DB path:', settings.DATABASES['default']['NAME'])
     print('Comment count after create:', Comment.objects.count())
