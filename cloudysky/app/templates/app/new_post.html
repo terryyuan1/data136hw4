@@ -1,4 +1,4 @@
-<form action="/app/createPost" method="post">
+<form action="{% url 'create_post' %}" method="post">
     {% csrf_token %}
     <div>
       <label for="id_title">Title:</label><br>

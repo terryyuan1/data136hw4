@@ -14,13 +14,32 @@ urlpatterns = [
                             template_name='registration/login.html'),
                         name='login'),
 
-    # API endpoints
+    # API endpoints with variations to handle different URL patterns
+    # createUser endpoint
     path('createUser/', views.create_user, name='create_user'),
-    path('createUser', views.create_user),  # Add alias without trailing slash
+    path('createUser', views.create_user),  # without trailing slash
+    
+    # createPost endpoint
     path('createPost/', views.create_post, name='create_post'),
+    path('createPost', views.create_post),  # without trailing slash
+    
+    # createComment endpoint
     path('createComment/', views.create_comment, name='create_comment'),
+    path('createComment', views.create_comment),  # without trailing slash
+    
+    # hidePost endpoint
     path('hidePost/', views.hide_post, name='hide_post'),
+    path('hidePost', views.hide_post),  # without trailing slash
+    
+    # hideComment endpoint
     path('hideComment/', views.hide_comment, name='hide_comment'),
+    path('hideComment', views.hide_comment),  # without trailing slash
+    
+    # dumpFeed endpoint
     path('dumpFeed/', views.dump_feed, name='dump_feed'),
+    path('dumpFeed', views.dump_feed),  # without trailing slash
+    
+    # dumpUploads endpoint
     path('dumpUploads/', views.dump_uploads, name='dump_uploads'),
+    path('dumpUploads', views.dump_uploads),  # without trailing slash
 ]

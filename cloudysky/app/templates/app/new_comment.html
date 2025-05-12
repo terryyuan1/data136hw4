@@ -1,4 +1,4 @@
-<form action="/app/createComment" method="post">
+<form action="{% url 'create_comment' %}" method="post">
     {% csrf_token %}
     <div>
       <label for="id_post_id">Post ID:</label><br>
