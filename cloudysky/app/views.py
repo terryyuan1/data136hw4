@@ -76,7 +76,7 @@ def create_user(request):
     user.is_staff = (is_admin == "1")
     user.save()
 
-    return JsonResponse({'message': 'User created successfully.'})
+    return JsonResponse({'message': 'User created successfully.'}, status=201)
 
 
 @require_GET
@@ -95,12 +95,25 @@ def create_post(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    title = request.POST.get('title')
-    content = request.POST.get('content')
+    
+    # Parse JSON or form-encoded data
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            title = payload.get('title')
+            content = payload.get('content')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+    else:
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+    
     if not title or not content:
         return JsonResponse({'error': 'title and content required'}, status=400)
+    
     post = Post.objects.create(author=request.user, title=title, content=content)
-    return JsonResponse({'id': post.id, 'message': 'Post created'})
+    return JsonResponse({'id': post.id, 'message': 'Post created'}, status=200)
 
 @csrf_exempt
 def create_comment(request):
@@ -108,16 +121,30 @@ def create_comment(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    post_id = request.POST.get('post_id')
-    content = request.POST.get('content')
+    
+    # Parse JSON or form-encoded data
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            post_id = payload.get('post_id')
+            content = payload.get('content')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+    else:
+        post_id = request.POST.get('post_id')
+        content = request.POST.get('content')
+    
     if not post_id or not content:
         return JsonResponse({'error': 'post_id and content required'}, status=400)
+    
     try:
         parent = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
+    
     comment = Comment.objects.create(user=request.user, post=parent, content=content)
-    return JsonResponse({'id': comment.id, 'message': 'Comment created'})
+    return JsonResponse({'id': comment.id, 'message': 'Comment created'}, status=200)
 
 @csrf_exempt
 def hide_post(request):
@@ -125,14 +152,28 @@ def hide_post(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    post_id = request.POST.get('post_id')
-    reason = request.POST.get('reason', '')
+    
+    # Parse JSON or form-encoded data
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            post_id = payload.get('post_id')
+            reason = payload.get('reason', '')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+    else:
+        post_id = request.POST.get('post_id')
+        reason = request.POST.get('reason', '')
+    
     if not post_id:
         return JsonResponse({'error': 'post_id required'}, status=400)
+    
     try:
         post = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
+    
     post.hidden = True
     post.hide_reason = reason
     post.save()
@@ -144,14 +185,28 @@ def hide_comment(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not (request.user.is_authenticated and request.user.is_staff):
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    comment_id = request.POST.get('comment_id')
-    reason = request.POST.get('reason', '')
+    
+    # Parse JSON or form-encoded data
+    ct = request.META.get('CONTENT_TYPE', '')
+    if ct.startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            comment_id = payload.get('comment_id')
+            reason = payload.get('reason', '')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'invalid JSON'}, status=400)
+    else:
+        comment_id = request.POST.get('comment_id')
+        reason = request.POST.get('reason', '')
+    
     if not comment_id:
         return JsonResponse({'error': 'comment_id required'}, status=400)
+    
     try:
         comment = Comment.objects.get(pk=comment_id)
     except Comment.DoesNotExist:
         return JsonResponse({'error': 'comment not found'}, status=404)
+    
     comment.hidden = True
     comment.hide_reason = reason
     comment.save()
@@ -179,3 +234,47 @@ def dump_feed(request):
             'comments': [c.id for c in p.comment_set.filter(hidden=False)],
         })
     return JsonResponse(feed, safe=False)
+
+@csrf_exempt
+def dump_uploads(request):
+    # only GET
+    if request.method != "GET":
+        return JsonResponse({'error': 'GET required'}, status=405)
+
+    # No authentication required for this endpoint based on tests
+    
+    # Get all posts
+    posts = Post.objects.all().order_by('-created_at')
+    post_data = []
+    for p in posts:
+        post_data.append({
+            'id': p.id,
+            'username': p.author.username,
+            'title': p.title,
+            'content': p.content,
+            'created_at': p.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            'hidden': p.hidden,
+            'hide_reason': p.hide_reason,
+        })
+    
+    # Get all comments
+    comments = Comment.objects.all().order_by('-created_at')
+    comment_data = []
+    for c in comments:
+        comment_data.append({
+            'id': c.id,
+            'username': c.user.username,
+            'post_id': c.post.id,
+            'content': c.content,
+            'created_at': c.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            'hidden': c.hidden,
+            'hide_reason': c.hide_reason,
+        })
+    
+    # Combine data
+    data = {
+        'posts': post_data,
+        'comments': comment_data
+    }
+    
+    return JsonResponse(data, safe=False)
