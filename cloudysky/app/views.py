@@ -80,8 +80,6 @@ def create_post(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    
-    # Parse JSON or form-encoded data
     ct = request.META.get('CONTENT_TYPE', '')
     if ct.startswith('application/json'):
         try:
@@ -93,13 +91,12 @@ def create_post(request):
     else:
         title = request.POST.get('title')
         content = request.POST.get('content')
-    
     if not title or not content:
         return JsonResponse({'error': 'title and content required'}, status=400)
-    
     try:
         post = Post.objects.create(author=request.user, title=title, content=content)
-        return JsonResponse({'id': post.id, 'message': 'Post created'})
+        # Explicitly return 200 status code for success
+        return JsonResponse({'id': post.id, 'message': 'Post created'}, status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -109,8 +106,6 @@ def create_comment(request):
         return JsonResponse({'error': 'POST required'}, status=405)
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    
-    # Parse JSON or form-encoded data
     ct = request.META.get('CONTENT_TYPE', '')
     if ct.startswith('application/json'):
         try:
@@ -122,18 +117,16 @@ def create_comment(request):
     else:
         post_id = request.POST.get('post_id')
         content = request.POST.get('content')
-    
     if not post_id or not content:
         return JsonResponse({'error': 'post_id and content required'}, status=400)
-    
     try:
         parent = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
-    
     try:
         comment = Comment.objects.create(user=request.user, post=parent, content=content)
-        return JsonResponse({'id': comment.id, 'message': 'Comment created'})
+        # Explicitly return 200 status code for success
+        return JsonResponse({'id': comment.id, 'message': 'Comment created'}, status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -141,10 +134,12 @@ def create_comment(request):
 def hide_post(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
-    if not (request.user.is_authenticated and request.user.is_staff):
-        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    # Check authentication and staff status
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized: Not logged in'}, status=401)
+    if not request.user.is_staff:
+         return JsonResponse({'error': 'Unauthorized: Staff required'}, status=401)
     
-    # Parse JSON or form-encoded data
     ct = request.META.get('CONTENT_TYPE', '')
     if ct.startswith('application/json'):
         try:
@@ -159,25 +154,30 @@ def hide_post(request):
     
     if not post_id:
         return JsonResponse({'error': 'post_id required'}, status=400)
-    
+        
     try:
         post = Post.objects.get(pk=post_id)
+        post.hidden = True
+        post.hide_reason = reason
+        post.save()
+        # Explicitly return 200 status code for success
+        return JsonResponse({'message': 'Post hidden'}, status=200)
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
-    
-    post.hidden = True
-    post.hide_reason = reason
-    post.save()
-    return JsonResponse({'message': 'Post hidden'})
+    except Exception as e:
+        # Catch other potential errors during save
+        return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 def hide_comment(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
-    if not (request.user.is_authenticated and request.user.is_staff):
-        return JsonResponse({'error': 'Unauthorized'}, status=401)
-    
-    # Parse JSON or form-encoded data
+    # Check authentication and staff status
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Unauthorized: Not logged in'}, status=401)
+    if not request.user.is_staff:
+         return JsonResponse({'error': 'Unauthorized: Staff required'}, status=401)
+         
     ct = request.META.get('CONTENT_TYPE', '')
     if ct.startswith('application/json'):
         try:
@@ -189,19 +189,22 @@ def hide_comment(request):
     else:
         comment_id = request.POST.get('comment_id')
         reason = request.POST.get('reason', '')
-    
+        
     if not comment_id:
         return JsonResponse({'error': 'comment_id required'}, status=400)
-    
+        
     try:
         comment = Comment.objects.get(pk=comment_id)
+        comment.hidden = True
+        comment.hide_reason = reason
+        comment.save()
+        # Explicitly return 200 status code for success
+        return JsonResponse({'message': 'Comment hidden'}, status=200)
     except Comment.DoesNotExist:
         return JsonResponse({'error': 'comment not found'}, status=404)
-    
-    comment.hidden = True
-    comment.hide_reason = reason
-    comment.save()
-    return JsonResponse({'message': 'Comment hidden'})
+    except Exception as e:
+        # Catch other potential errors during save
+        return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 def dump_feed(request):
@@ -209,18 +212,21 @@ def dump_feed(request):
         return JsonResponse({'error': 'GET required'}, status=405)
     if not request.user.is_authenticated or not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-    posts = Post.objects.filter(hidden=False).order_by('-created_at')
-    feed = []
-    for p in posts:
-        feed.append({
-            'id'      : p.id,
-            'username': p.author.username,
-            'date'    : p.created_at.strftime("%Y-%m-%d %H:%M"),
-            'title'   : p.title,
-            'content' : p.content,
-            'comments': [c.id for c in p.comment_set.filter(hidden=False)],
-        })
-    return JsonResponse(feed, safe=False)
+    try:
+        posts = Post.objects.filter(hidden=False).order_by('-created_at')
+        feed = []
+        for p in posts:
+            feed.append({
+                'id': p.id,
+                'username': p.author.username,
+                'date': p.created_at.strftime("%Y-%m-%d %H:%M"),
+                'title': p.title,
+                'content': p.content,
+                'comments': [c.id for c in p.comment_set.filter(hidden=False)],
+            })
+        return JsonResponse(feed, safe=False)
+    except Exception as e:
+         return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 def dump_uploads(request):
