@@ -33,60 +33,36 @@ def new_user(request):
 
 @csrf_exempt
 def create_user(request):
-    # Allow GET for testing
-    if request.method == "GET":
-        # This is specifically for the "3) HW4: Checks that createUser endpoint responds with code 200 (0/0)" test
-        return HttpResponse("<DOCTYPE html><html><body>User Creation Form</body></html>", status=200)
-        
-    # 1) only allow POST for actual user creation
     if request.method != "POST":
         return JsonResponse({'error': 'POST required'}, status=405)
-
-    # 2) parse JSON _or_ form-encoded
     ct = request.META.get('CONTENT_TYPE', '')
     if ct.startswith('application/json'):
         try:
             payload = json.loads(request.body.decode('utf-8'))
         except json.JSONDecodeError:
             return JsonResponse({'error': 'invalid JSON'}, status=400)
-        uname    = payload.get('user_name') or payload.get('username')
-        email    = payload.get('email')
+        uname = payload.get('user_name') or payload.get('username')
+        email = payload.get('email')
         password = payload.get('password')
         is_admin = payload.get('is_admin', '0')
     else:
-        uname    = request.POST.get('user_name') or request.POST.get('username')
-        email    = request.POST.get('email')
+        uname = request.POST.get('user_name') or request.POST.get('username')
+        email = request.POST.get('email')
         password = request.POST.get('password')
         is_admin = request.POST.get('is_admin', '0')
-
-    # 3) missing fields → HTTP 200 with error JSON
     if not uname or not email or not password:
-        return JsonResponse(
-            {'error': 'username, email, and password required'}
-        )
-
-    # 4) duplicate email/username → HTTP 400
+        return JsonResponse({'error': 'username, email, and password required'})
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({'error': 'email already in use'}, status=400)
+    if User.objects.filter(username=uname).exists():
+        return JsonResponse({'error': 'username already in use'}, status=400)
     try:
-        if User.objects.filter(email=email).exists():
-            return JsonResponse({'error': 'email already in use'}, status=400)
-        if User.objects.filter(username=uname).exists():
-            return JsonResponse({'error': 'username already in use'}, status=400)
-
-        # 5) everything's good → create the user
-        user = User.objects.create_user(
-            username=uname,
-            email=email,
-            password=password,
-        )
-        # set staff status if they checked "1"
+        user = User.objects.create_user(username=uname, email=email, password=password)
         user.is_staff = (is_admin == "1")
         user.save()
-
         return JsonResponse({'message': 'User created successfully.'})
     except Exception as e:
-        # Catch any exceptions to prevent 500 errors
         return JsonResponse({'error': str(e)}, status=400)
-
 
 @require_GET
 def new_post(request):
@@ -155,8 +131,11 @@ def create_comment(request):
     except Post.DoesNotExist:
         return JsonResponse({'error': 'post not found'}, status=404)
     
-    comment = Comment.objects.create(user=request.user, post=parent, content=content)
-    return JsonResponse({'id': comment.id, 'message': 'Comment created'})
+    try:
+        comment = Comment.objects.create(user=request.user, post=parent, content=content)
+        return JsonResponse({'id': comment.id, 'message': 'Comment created'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 @csrf_exempt
 def hide_post(request):
@@ -226,14 +205,10 @@ def hide_comment(request):
 
 @csrf_exempt
 def dump_feed(request):
-    # only GET
     if request.method != "GET":
         return JsonResponse({'error': 'GET required'}, status=405)
-
-    # must be logged in staff
     if not request.user.is_authenticated or not request.user.is_staff:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
-
     posts = Post.objects.filter(hidden=False).order_by('-created_at')
     feed = []
     for p in posts:
@@ -249,13 +224,9 @@ def dump_feed(request):
 
 @csrf_exempt
 def dump_uploads(request):
-    # only GET
     if request.method != "GET":
         return JsonResponse({'error': 'GET required'}, status=405)
-
-    # Get all posts and comments without authentication
     try:
-        # Get all posts
         posts = Post.objects.all().order_by('-created_at')
         post_data = []
         for p in posts:
@@ -269,7 +240,6 @@ def dump_uploads(request):
                 'hide_reason': p.hide_reason,
             })
         
-        # Get all comments
         comments = Comment.objects.all().order_by('-created_at')
         comment_data = []
         for c in comments:
@@ -283,7 +253,6 @@ def dump_uploads(request):
                 'hide_reason': c.hide_reason,
             })
         
-        # Return data
         return JsonResponse({
             'posts': post_data,
             'comments': comment_data
