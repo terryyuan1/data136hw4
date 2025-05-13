@@ -1,0 +1,88 @@
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New User</h2>
+    <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+    <div id="success-message" class="alert alert-success" style="display: none;">Registration successful! Redirecting...</div>
+    <form id="user-form" action="{% url 'app:create_user' %}" method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="user_name">Username:</label>
+            <input type="text" class="form-control" id="user_name" name="user_name" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <div class="form-group mt-3">
+            <label>User Type:</label>
+            <div class="form-check">
+                <input class="form-check-input user-type-radio" type="radio" name="user_type" id="regular_user" value="0" checked>
+                <label class="form-check-label" for="regular_user">Regular User</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input user-type-radio" type="radio" name="user_type" id="admin_user" value="1">
+                <label class="form-check-label" for="admin_user">Admin User</label>
+            </div>
+        </div>
+        <div class="form-check" style="display: none;">
+            <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" value="1">
+            <label class="form-check-label" for="is_admin">Admin User</label>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Create User</button>
+    </form>
+</div>
+
+<script>
+document.querySelectorAll('.user-type-radio').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+        document.getElementById('is_admin').checked = (this.value === '1');
+    });
+});
+
+document.getElementById('user-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: new FormData(this),
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            const errorDiv = document.getElementById('error-message');
+            const successDiv = document.getElementById('success-message');
+            errorDiv.textContent = data.error;
+            errorDiv.style.display = 'block';
+            successDiv.style.display = 'none';
+        } else {
+            const errorDiv = document.getElementById('error-message');
+            const successDiv = document.getElementById('success-message');
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'block';
+            // Disable the form
+            document.getElementById('user-form').style.opacity = '0.5';
+            document.getElementById('user-form').style.pointerEvents = 'none';
+            // Redirect after a short delay
+            setTimeout(() => {
+                window.location.href = "{% url 'app:index' %}";
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = 'An error occurred. Please try again.';
+        errorDiv.style.display = 'block';
+    });
+});
+</script>
+{% endblock %}

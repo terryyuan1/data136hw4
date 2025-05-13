@@ -1,48 +1,44 @@
 # app/urls.py
+
 from django.urls import path
 from . import views
-from django.contrib.auth import views as auth_views
+
+app_name = 'app'
 
 urlpatterns = [
-    # Human‐facing pages (index, signup form, new‐post/comment forms, login) —
-    path('',             views.index,     name='index_html'),  # still serve "/" for convenience
-    path('index.html',   views.index,     name='index'),
-    path('new/',         views.new_user,  name='new_user'),
-    path('new_post/',    views.new_post,  name='new_post'),
-    path('new_comment/', views.new_comment, name='new_comment'),
-    path('login/',       auth_views.LoginView.as_view(
-                            template_name='registration/login.html'),
-                        name='login'),
+    # Existing utility endpoints
+    path("dummypage",        views.dummypage,      name="dummypage"),
+    path("time",             views.get_time,      name="get_time"),
+    path("sum",              views.get_sum,       name="get_sum"),
 
-    # API endpoints with variations to handle different URL patterns
-    # createUser endpoint
-    path('createUser/', views.create_user, name='create_user'),
-    path('createUser', views.create_user),  # without trailing slash
-    
-    # createPost endpoint
-    path('createPost/', views.create_post, name='create_post'),
-    path('createPost', views.create_post),  # without trailing slash
-    
-    # createComment endpoint
-    path('createComment/', views.create_comment, name='create_comment'),
-    path('createComment', views.create_comment),  # without trailing slash
-    
-    # hidePost endpoint
-    path('hidePost/', views.hide_post, name='hide_post'),
-    path('hidePost', views.hide_post),  # without trailing slash
-    
-    # hideComment endpoint
-    path('hideComment/', views.hide_comment, name='hide_comment'),
-    path('hideComment', views.hide_comment),  # without trailing slash
-    
-    # dumpFeed endpoint
-    path('dumpFeed/', views.dump_feed, name='dump_feed'),
-    path('dumpFeed', views.dump_feed),  # without trailing slash
-    
-    # dumpUploads endpoint
-    path('dumpUploads/', views.dump_uploads, name='dump_uploads'),
-    path('dumpUploads', views.dump_uploads),  # without trailing slash
+    # Index
+    path("",                 views.index,         name="index"),
+
+    # User signup
+    path("new",              views.new_user_form),
+    path("new/",             views.new_user_form, name="new_user"),
+    path("createUser",       views.create_user),
+    path("createUser/",      views.create_user,   name="create_user"),
+
+    # New Post form & API
+    path("new_post",         views.new_post),
+    path("new_post/",        views.new_post,      name="new_post"),
+    path("createPost",       views.create_post),
+    path("createPost/",      views.create_post,   name="create_post"),
+
+    # New Comment form & API
+    path("new_comment",      views.new_comment),
+    path("new_comment/",     views.new_comment,   name="new_comment"),
+    path("createComment",    views.create_comment),
+    path("createComment/",   views.create_comment,name="create_comment"),
+
+    # Hide/Censor endpoints
+    path("hidePost",         views.hide_post),
+    path("hidePost/",        views.hide_post,     name="hide_post"),
+    path("hideComment",      views.hide_comment),
+    path("hideComment/",     views.hide_comment,  name="hide_comment"),
+
+    # Dump feed (admin-only JSON dump)
+    path("dumpFeed",         views.dump_feed),
+    path("dumpFeed/",        views.dump_feed,     name="dump_feed"),
 ]
-
-if __name__ == "__main__":
-    unittest.main()

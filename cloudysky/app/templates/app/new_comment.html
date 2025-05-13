@@ -1,13 +1,19 @@
-<form action="{% url 'create_comment' %}" method="post">
-    {% csrf_token %}
-    <div>
-      <label for="id_post_id">Post ID:</label><br>
-      <input type="number" id="id_post_id" name="post_id" required>
-    </div>
-    <div>
-      <label for="id_content">Comment:</label><br>
-      <textarea id="id_content" name="content" rows="4" required></textarea>
-    </div>
-    <button type="submit">Create Comment</button>
-  </form>
-  
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New Comment</h2>
+    <form action="{% url 'app:create_comment' %}" method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="post_id">Post ID:</label>
+            <input type="number" class="form-control" id="post_id" name="post_id" required>
+        </div>
+        <div class="form-group">
+            <label for="content">Comment:</label>
+            <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Create Comment</button>
+    </form>
+</div>
+{% endblock %} 

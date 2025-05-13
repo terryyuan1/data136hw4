@@ -1,34 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Index</title>
-  <style>
-    body { text-align: center; font-family: sans-serif; }
-    a { margin: 0 .5em; }
-  </style>
-</head>
-<body>
-  <h1>{{ bio|safe }}</h1>
+{% extends 'app/base.html' %}
 
-  <p>
-    Current user:
-    {% if current_user %}
-      <strong>{{ current_user.username }}</strong>
-      ({{ current_user.email }})
-    {% else %}
-      <em>Not logged in</em>
+{% block content %}
+  <div class="text-center">
+    <h1>Team Bio</h1>
+   
+    {% if not request.user.is_authenticated %}
+      <p><em>Not logged in</em></p>
     {% endif %}
-  </p>
 
-  <p>Current time: {{ current_time }}</p>
+    {% for person in bio %}
+      {% if request.user.get_full_name == person.name %}
+        <p><strong style="background: yellow">{{ person.name }}</strong> — {{ person.role }}</p>
+      {% else %}
+        <p>{{ person.name }} — {{ person.role }}</p>
+      {% endif %}
+    {% endfor %}
 
-  <p>
-    <a href="{% url 'index' %}">Home</a>
-    {% if not current_user %}
-      <a href="{% url 'new_user' %}">Sign up</a>
-      <a href="{% url 'login' %}">Log in</a>
-    {% endif %}
-  </p>
-</body>
-</html>
+    <hr>
+
+    <p>Current server time: {{ now }}</p>
+  </div>
+{% endblock %}

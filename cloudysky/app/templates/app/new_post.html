@@ -1,13 +1,30 @@
-<form action="{% url 'create_post' %}" method="post">
-    {% csrf_token %}
-    <div>
-      <label for="id_title">Title:</label><br>
-      <input type="text" id="id_title" name="title" required>
-    </div>
-    <div>
-      <label for="id_content">Content:</label><br>
-      <textarea id="id_content" name="content" rows="5" required></textarea>
-    </div>
-    <button type="submit">Create Post</button>
-  </form>
-  
+{% extends 'app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New Post</h2>
+    <form action="{% url 'app:create_post' %}" method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+        <div class="form-group">
+            <label for="content">Content:</label>
+            <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+        </div>
+        <div class="form-group mt-3">
+            <label>Post Type:</label>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="post_type" id="public" value="public" checked>
+                <label class="form-check-label" for="public">Public</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="post_type" id="private" value="private">
+                <label class="form-check-label" for="private">Private</label>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Create Post</button>
+    </form>
+</div>
+{% endblock %} 
