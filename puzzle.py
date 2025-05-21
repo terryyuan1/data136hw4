@@ -13,7 +13,7 @@ puzzle_misspell = "wkitpng"  # Just the exact string, no quotes in the value
 
 # For easy testing
 puzzle_easy_key = 6346  # Integer value
-puzzle_easy_misspell = "Fabruart"  # Date from the decoded message
+puzzle_easy_misspell = "Fabruart,"  # Misspelling of February with comma
 
 # The code below is commented out because it attempts to access files that may not exist in all environments
 # Uncomment if needed and if the TEXT file exists in your environment
