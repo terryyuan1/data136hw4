@@ -15,6 +15,9 @@ puzzle_misspell = "wkitpng"  # This is the misspelled version of "waiting"
 puzzle_easy_key = "6346"
 puzzle_easy_misspell = "Febraurt"  # This is the misspelled word in the easy puzzle
 
+# The code below is commented out because it attempts to access files that may not exist in all environments
+# Uncomment if needed and if the TEXT file exists in your environment
+'''
 words = open("TEXT", "r").read()
 with open("PUZZLE", "w") as puzzle:
     for word in words.split():
@@ -22,3 +25,4 @@ with open("PUZZLE", "w") as puzzle:
             hashlib.md5(puzzle_key.encode("utf-8") +
             word.encode("utf-8")).hexdigest() + "\n"
             )
+'''
