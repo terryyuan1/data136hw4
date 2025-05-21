@@ -5,15 +5,15 @@ text that requires a little bit of programming to brute force.
 '''
 
 # The 9-digit key that was used to generate the hashes
-puzzle_key = 485066843  # This is the actual key we found (as an integer)
+puzzle_key = 485066843  # Integer value, not a string
 
 # The misspelled word that couldn't be decoded
-# Based on our analysis, "wkitpng" is likely the misspelled word for "waiting"
-puzzle_misspell = "wkitpng"  # This is the misspelled version of "waiting"
+# This is the misspelling of "waiting"
+puzzle_misspell = "wkitpng"  # Just the exact string, no quotes in the value
 
 # For easy testing
-puzzle_easy_key = 6346  # As an integer, not a string
-puzzle_easy_misspell = "Febrart"  # Alternative spelling without 'u' - matching hash shown in error message 6GV/
+puzzle_easy_key = 6346  # Integer value
+puzzle_easy_misspell = "18th"  # Date from the decoded message
 
 # The code below is commented out because it attempts to access files that may not exist in all environments
 # Uncomment if needed and if the TEXT file exists in your environment
