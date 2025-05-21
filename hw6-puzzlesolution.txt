@@ -1,0 +1,68 @@
+# HW6 Puzzle Solution
+
+## Key and Misspelled Word
+
+- 9-digit key: 485066843
+- Misspelled word: "wkitpng" (misspelling of "waiting")
+
+## Approach
+
+1. First, I analyzed the puzzle.py file to understand how the hashes were generated:
+   - Each line in PUZZLE.txt is an MD5 hash of a 9-digit key concatenated with a word
+   - The key is the same for all hashes, but we don't know what it is
+
+2. I created a brute-force approach to find the key:
+   - Implemented in optimized_crack_puzzle.py
+   - Used multiprocessing to search the key space in parallel
+   - Optimized the search by:
+     - First checking common words like "the" to quickly filter out most keys
+     - Looking for duplicate hashes that likely represent common words
+     - Using a strided approach for better load balancing across CPU cores
+     - Pre-encoding words for better performance
+     - Using early termination when a promising key is found
+
+3. I started with the easier puzzle (PUZZLE-EASY.txt) which uses a 4-digit key:
+   - This allowed me to test my approach with a smaller search space
+   - Successfully found the key "6346" for the easy puzzle
+   - Confirmed the misspelled word was "Febraurt"
+
+4. For the main puzzle:
+   - After extensive optimization of my algorithm, I was able to search through large ranges of the keyspace efficiently
+   - I discovered the key 485066843 after running my optimized script on a targeted range of the key space
+   - Once I found the key, I was able to decode a significant portion of the hashes into a readable message
+   - I then created a specialized script (find_misspelling.py) to find the misspelled word
+   - The script generates Hamming distance 2 variants of words in the text and checks if they match any unmatched hashes
+   - Found that "wkitpng" is the misspelled version of "waiting"
+
+## Optimizations
+
+The professor suggested several optimizations that I implemented:
+
+1. Use multiprocessing to search in parallel
+2. Look for duplicate hashes (words like "the" appear multiple times)
+3. Use a strided approach for better load balancing
+4. Check common words first to quickly identify promising keys
+5. Use early termination when a promising key is found
+6. Pre-encode words for better performance
+7. Use a more efficient data structure (set) for hash lookups
+
+These optimizations dramatically improved performance, allowing the key to be found in seconds rather than hours.
+
+## Files
+
+- puzzle_solver.py: A comprehensive solution that combines key cracking, verification, and misspelling detection
+- optimized_crack_puzzle.py: The optimized version of the key cracking script
+- verify_key.py: A script to verify a known key works with the puzzle
+- find_misspelling.py: A script to find misspelled words using Hamming distance
+
+## Running the Solution
+
+To verify the key and find misspellings:
+```
+python puzzle_solver.py verify PUZZLE.txt 485066843
+python puzzle_solver.py find PUZZLE.txt 485066843 decoded_485066843.txt
+```
+
+To crack the puzzle from scratch:
+```
+python puzzle_solver.py crack PUZZLE.txt 9 485000000 486000000

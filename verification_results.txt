@@ -1,0 +1,45 @@
+Key: 485066843
+Best match: 70/143 hashes (49.0%) using combined_wordlist.txt
+
+Partially decoded message:
+[MISSING] little bastards were hiding out there in the tall [MISSING] [MISSING] moon was not quite [MISSING] but [MISSING] and it was behind [MISSING] so [MISSING] could see them as plain as [MISSING] though it was deep [MISSING] [MISSING] bugs flashed against the black [MISSING] [MISSING] waited at [MISSING] [MISSING] kitchen [MISSING] rocked a loose step board with my [MISSING] knew she was going to tell me to fix it [MISSING] [MISSING] was [MISSING] there for her to give me a pan of corn bread that she had made with my [MISSING] [MISSING] [MISSING] is a big part of a [MISSING] [MISSING] waiting and waiting to wait some [MISSING] [MISSING] for [MISSING] [MISSING] for [MISSING] [MISSING] for the ends of [MISSING] [MISSING] for the just and deserved [MISSING] reward at the end of it [MISSING] [MISSING] white [MISSING] [MISSING] and [MISSING] watched me.
+
+Unmatched hashes:
+544b414576b84420a6e0e059a78ed1cd
+73c90bb76e6ca7e47664ba7c28a4c543
+212825304a01f3f39b9076a7af29dffb
+c4f6bf4da1e7f762fc1532c7099b918d
+f1e23f2f992e62f0ada1251fffac088f
+6482ec38a07523b1dbefccdac8728723
+9e0b50865f3710c3c5806721f873631f
+602e8de9b91b66f9679f41959a045077
+8bab4d0cdea3da1a50b1bba802019572
+cb71717e37ecd581a5b1585021a0172a
+76fd5c77e52ae2f3be45b69efd1b1b51
+9e0b50865f3710c3c5806721f873631f
+5fa9c3942dccec14d94c911d3126cbf6
+14b625c3727b384cb012e42a6e94df9d
+ad3ab78314415b8e9f02790dd840bb93
+6fd9ae0d8b8a9ff582152cb3b5e35c80
+540e0e77ea6f83b0e8a6e4c1bb950400
+9e0b50865f3710c3c5806721f873631f
+9291c4d7338648be9c05d86fdb4124f9
+8b17faffc9b2bc6ea78d05394c612c74
+43b7936e79754f7843630bffdedc4b8c
+8259686a861a06987aa2f933aa828155
+e8f042230c2e9f25cd9c030fe4645e13
+719b95eabdad44dc6ce31a8109f88a65
+5a639db4611448c981ed7a1ac2db0e81
+8259686a861a06987aa2f933aa828155
+b7b3637bdfaee162803df12ab4925a5a
+8259686a861a06987aa2f933aa828155
+b39cc164200724edf928c09b57be421d
+8259686a861a06987aa2f933aa828155
+5b571a7f5cf16626ddf7b7913124bfbd
+8259686a861a06987aa2f933aa828155
+2b8859c47811d41f101fe89c9d56919b
+a901502c9d40de849018603962d14d9b
+544b414576b84420a6e0e059a78ed1cd
+3291efea9f67062304dd8c469d95fe6b
+0b65584c31d2d687516580a4a1dede81
+4798cf32e916f8c0f1f946bd96654e6e

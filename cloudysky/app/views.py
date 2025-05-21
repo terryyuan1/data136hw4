@@ -359,3 +359,89 @@ def dump_uploads(request):
     except Exception as e:
         print(f"Error in dump_uploads: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
+
+@csrf_exempt
+@require_GET
+def app_feed(request):
+    """
+    API endpoint that lists posts in reverse chronological order with truncated content.
+    Returns post number, title, date, username, and truncated content.
+    """
+    current_user = request.user
+    is_staff = current_user.is_authenticated and current_user.is_staff
+    
+    # Get all posts
+    posts = Post.objects.order_by('-created_at')
+    
+    result = []
+    for post in posts:
+        # Check if post should be visible
+        if post.hidden and not is_staff and (not current_user.is_authenticated or current_user.id != post.author.id):
+            # Skip this post - it's hidden and the user doesn't have permission to see it
+            continue
+            
+        # Truncate content to 100 characters
+        truncated_content = post.content[:100] + "..." if len(post.content) > 100 else post.content
+        
+        # Add post data to result
+        result.append({
+            'id': post.id,
+            'title': post.title,
+            'date': post.created_at.isoformat(),
+            'username': post.author.username,
+            'content': truncated_content
+        })
+    
+    return JsonResponse(result, safe=False)
+
+@csrf_exempt
+@require_GET
+def app_post_detail(request, post_id):
+    """
+    API endpoint that shows details of a specific post and all its comments.
+    Handles censorship logic for both the post and its comments.
+    """
+    current_user = request.user
+    is_staff = current_user.is_authenticated and current_user.is_staff
+    
+    try:
+        post = Post.objects.get(pk=post_id)
+        
+        # Check if post should be visible
+        if post.hidden and not is_staff and (not current_user.is_authenticated or current_user.id != post.author.id):
+            return JsonResponse({'error': 'Post not found'}, status=404)
+        
+        # Get all comments for this post
+        comments = Comment.objects.filter(post=post).order_by('created_at')
+        
+        # Format comments with censorship logic
+        formatted_comments = []
+        for comment in comments:
+            comment_data = {
+                'id': comment.id,
+                'username': comment.user.username,
+                'date': comment.created_at.isoformat(),
+            }
+            
+            # Apply censorship logic to comments
+            if comment.hidden and not is_staff and (not current_user.is_authenticated or current_user.id != comment.user.id):
+                comment_data['content'] = "This comment has been removed"
+            else:
+                comment_data['content'] = comment.content
+                
+            formatted_comments.append(comment_data)
+        
+        # Format post with all details
+        result = {
+            'id': post.id,
+            'title': post.title,
+            'content': post.content,
+            'date': post.created_at.isoformat(),
+            'username': post.author.username,
+            'comments': formatted_comments
+        }
+        
+        return JsonResponse(result)
+        
+    except Post.DoesNotExist:
+        return JsonResponse({'error': 'Post not found'}, status=404)

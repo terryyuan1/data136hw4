@@ -42,6 +42,15 @@ urlpatterns = [
     # dumpUploads endpoint
     path('dumpUploads/', views.dump_uploads, name='dump_uploads'),
     path('dumpUploads', views.dump_uploads),  # without trailing slash
+    
+    # New endpoints for HW6
+    # app/feed endpoint
+    path('app/feed/', views.app_feed, name='app_feed'),
+    path('app/feed', views.app_feed),  # without trailing slash
+    
+    # app/post/<post_id> endpoint
+    path('app/post/<int:post_id>/', views.app_post_detail, name='app_post_detail'),
+    path('app/post/<int:post_id>', views.app_post_detail),  # without trailing slash
 ]
 
 if __name__ == "__main__":
