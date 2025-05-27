@@ -97,7 +97,7 @@ def create_post(request):
     post = Post.objects.create(author=author, title=title, content=content)
     print('DB path:', settings.DATABASES['default']['NAME'])
     print('Post count after create:', Post.objects.count())
-    return JsonResponse({'id': post.id, 'message': 'Post created'}, status=200)
+    return JsonResponse({'post_id': post.id, 'message': 'Post created'}, status=200)
 
 @csrf_exempt
 def create_comment(request):
@@ -128,7 +128,7 @@ def create_comment(request):
     comment = Comment.objects.create(user=user, post=parent, content=content)
     print('DB path:', settings.DATABASES['default']['NAME'])
     print('Comment count after create:', Comment.objects.count())
-    return JsonResponse({'id': comment.id, 'message': 'Comment created'}, status=200)
+    return JsonResponse({'comment_id': comment.id, 'message': 'Comment created'}, status=200)
 
 @csrf_exempt
 def hide_post(request):
@@ -271,19 +271,42 @@ def hide_comment(request):
 def dump_feed(request):
     if request.method != "GET":
         return JsonResponse({'error': 'GET required'}, status=405)
-    if not request.user.is_authenticated or not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=401)
     try:
-        posts = Post.objects.filter(hidden=False).order_by('-created_at')
+        # Get the current user
+        current_user = request.user
+        is_staff = current_user.is_authenticated and current_user.is_staff
+        
+        # Get all posts - for admins show all, for regular users filter hidden posts
+        if is_staff:
+            posts = Post.objects.order_by('-created_at')
+        else:
+            posts = Post.objects.filter(hidden=False).order_by('-created_at')
+            
         feed = []
         for p in posts:
+            # For each post, get visible comments
+            if is_staff:
+                comments = p.comment_set.all()
+            else:
+                comments = p.comment_set.filter(hidden=False)
+                
+            # Format comments with full content
+            formatted_comments = []
+            for c in comments:
+                formatted_comments.append({
+                    'id': c.id,
+                    'username': c.user.username,
+                    'content': c.content,
+                    'date': c.created_at.strftime("%Y-%m-%d %H:%M")
+                })
+                
             feed.append({
                 'id': p.id,
                 'username': p.author.username,
                 'date': p.created_at.strftime("%Y-%m-%d %H:%M"),
                 'title': p.title,
                 'content': p.content,
-                'comments': [c.id for c in p.comment_set.filter(hidden=False)],
+                'comments': formatted_comments,
             })
         return JsonResponse(feed, safe=False)
     except Exception as e:
